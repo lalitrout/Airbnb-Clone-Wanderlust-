@@ -5,6 +5,8 @@ const Listing = require("./models/listing.js");
 const path = require("path");
 const methodOverride = require("method-override");
 const ejsMate = require("ejs-mate");
+const wrapAsync = require("./utils/wrapAsync.js");
+const ExpressError = require("./utils/ExpressError.js");
 
 const MONGO_URL = 'mongodb://127.0.0.1:27017/wanderlust';
 
@@ -32,62 +34,64 @@ app.get("/",(req,res) => {
 });
 
 //index route
-app.get("/listing", async(req,res) => {
+app.get("/listing", wrapAsync(async(req,res) => {
     const allListing = await Listing.find({});
     res.render("listings/index.ejs", {allListing});
-});
+}));
 
 //add route
-app.get("/listing/new", async (req,res) => {
+app.get("/listing/new", wrapAsync(async (req,res) => {
     res.render("listings/new.ejs");
-});
+}));
 
 //show route
-app.get("/listing/:id", async (req,res) => {
+app.get("/listing/:id", wrapAsync(async (req,res) => {
     let {id} = req.params;
     const listing = await Listing.findById(id);
+    // console.log("listing =",listing); 
     res.render("listings/show.ejs", {listing});
-});
+}));
 
-app.post("/listing", async (req,res) => {
+//create route
+app.post("/listing", wrapAsync(async (req,res) => {
+    if(!req.body.listing){
+        throw new ExpressError(404,"Please enter a valid data for listing");
+    };
     const newListing = new Listing(req.body.listing);
     await newListing.save();
     res.redirect("/listing");
-});
+}));
 
 //edit route
-app.get("/listing/:id/edit" , async (req,res) => {
+app.get("/listing/:id/edit" , wrapAsync(async (req,res) => {
     let {id} = req.params;
     const listing = await Listing.findById(id);
     res.render("listings/edit.ejs", {listing});
-});
+}));
 
 //update route
-app.put("/listing/:id" , async (req,res) => {
+app.put("/listing/:id" , wrapAsync(async (req,res) => {
     let {id} = req.params;
     await Listing.findByIdAndUpdate(id, {...req.body.listing});
     res.redirect(`/listing/${id}`);
-});
+}));
 
-app.delete("/listing/:id",async (req,res) => {
+//delete route
+app.delete("/listing/:id", wrapAsync(async (req,res) => {
     let {id} = req.params;
     let deletedListing = await Listing.findByIdAndDelete(id);
     // console.log(deletedListing);
     res.redirect("/listing");
-});
+}));
 
-// app.get("/testListing", async(req,res) => {
-    // let sampleListing = new Listing ({
-        // title: "my villa",
-        // description: "by the beach",
-        // price: 12000,
-        // location : "Goa",
-        // country : "India",
-    // });
-    //  await sampleListing.save();
-    //  console.log("sample was saved");
-    //  res.send("successful testing")
-// });
+app.all("*" , (req,res,next) => {
+    next(new ExpressError(404 , "Page Not Found!"));
+})
+
+app.use ((err,req,res,next) => {
+    let {statusCode=500 , message="something went wrong"} = err;
+    res.status(statusCode).send(message);
+});
 
 app.listen(8080, () => {
     console.log("server is listening to");
