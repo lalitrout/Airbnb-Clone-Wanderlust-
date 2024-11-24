@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-
+const reviews = require("./reviews");
 const Schema = mongoose.Schema;
 
 const listingSchema = new Schema({
@@ -33,6 +33,12 @@ const listingSchema = new Schema({
         type: String,
         // enum: ["USA", "Canada", "UK", "Australia"],
     },
+    reviews: [
+        {
+            type: Schema.Types.ObjectId,
+            ref:"Reviews",
+        }
+    ]
 });
 
 // Middleware to ensure that default values are applied if image is not provided
