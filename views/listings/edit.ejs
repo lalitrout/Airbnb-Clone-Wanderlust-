@@ -4,7 +4,7 @@
 <br>
     <h3>Edit your listing</h3>
     <br>
-    <form method="POST" action="/listing/<%= listing._id%>?_method=put " novalidate class="needs-validation">
+    <form method="POST" action="/listings/<%= listing._id%>?_method=put " novalidate class="needs-validation">
     <div class="mb-3 mt-3">
         <label for="title" class="form-label">Title </label>
         <input name="listing[title]" value="<%= listing.title %>" type="text" class="form-control" required>

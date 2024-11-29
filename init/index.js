@@ -4,22 +4,25 @@ const Listing = require("../models/listing.js");
 
 const MONGO_URL = 'mongodb://127.0.0.1:27017/wanderlust';
 
-main()
-.then( () => {
-    console.log("you r connected to db");
-})
-.catch((err) => {
-    console.log(err);
-})
-
 async function main() {
-    await mongoose.connect(MONGO_URL);
-};
+    try {
+        await mongoose.connect(MONGO_URL);
+        console.log("Connected to MongoDB!");
+    } catch (error) {
+        console.error("Error connecting to MongoDB:", error);
+    }
+}
 
 const initDB = async () => {
-    await Listing.deleteMany({});
-    await Listing.insertMany(initdata.data);
-    console.log("data was saved");
+    try {
+        await Listing.deleteMany({});
+        await Listing.insertMany(initdata.data);
+        console.log("Database initialized with data!");
+    } catch (error) {
+        console.error("Error initializing database:", error);
+    } finally {
+        mongoose.connection.close();
+    }
 };
 
-initDB();
+main().then(() => initDB());
