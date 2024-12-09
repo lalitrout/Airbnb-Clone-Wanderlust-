@@ -14,12 +14,11 @@ router.route("/")
       .post(
         isLoggedIn,
         upload.single('listing[image]'),
-        validateListing,
+        // validateListing,
         wrapAsync(listingController.createListings));
 //add new route
 router.get("/new", 
-    isLoggedIn,
-    wrapAsync(listingController.renderNewForm));
+    isLoggedIn, listingController.renderNewForm);
 
 //show route
 router.route("/:id") 

@@ -32,6 +32,7 @@ main()
 
 async function main() {
     await mongoose.connect(MONGO_URL);
+    // mongoose.set('debug', true);
 };
 
 app.set("view engine", "ejs");
