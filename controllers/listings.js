@@ -36,18 +36,34 @@ module.exports.showAllListing = async (req, res, next) => {
 
 module.exports.createListings = async (req, res, next) => {
     try {
-        let url = req.file.path;
-        let filename = req.file.filename;
-        const newListing = new Listing(req.body.listing);
+        let newListing = new Listing(req.body.listing);
         newListing.owner = req.user._id;
-        newListing.image = {url, filename};
-        // console.log(newListing.image);
-        await newListing.save();
-        // console.log("saved");
+
+        if (typeof req.file !== "undefined")
+            {
+            let url = req.file.path;
+            let filename = req.file.filename;
+            newListing.image = { url, filename };     
+        }
+
+        // Set a timeout for saving the listing
+        const saveWithTimeout = Promise.race([
+            newListing.save(),
+            new Promise((_, reject) =>
+                setTimeout(() => reject(new Error("Timeout: Saving took too long")), 15000) // 15 seconds timeout
+            ),
+        ]);
+
+        await saveWithTimeout;
+
         req.flash("success", "New Listing Created!");
         res.redirect("/listings");
     } catch (err) {
-        next(err);
+        if (err.message.includes("Timeout")) {
+            req.flash("error", "Server took too long to process your request. Please try again later.");
+            return res.redirect("/listings"); // Redirect to an error or fallback page
+        }
+        next(err); // Pass other errors to the error handler middleware
     }
 };
 
@@ -70,7 +86,27 @@ module.exports.renderEditForm = async (req, res, next) => {
 module.exports.updateListings = async (req, res, next) => {
     try {
         const { id } = req.params;
-        await Listing.findByIdAndUpdate(id, { ...req.body.listing });
+        let listing = await Listing.findByIdAndUpdate(id, { ...req.body.listing });
+
+        if (typeof req.file !== "undefined") {
+            let url = req.file.path;
+            let filename = req.file.filename;
+            listing.image = { url, filename };
+
+            // Adding a timeout for the save operation using Promise.race
+            const savePromise = listing.save();
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error("try again after some time")), 15000) // 15-second timeout
+            );
+
+            try {
+                await Promise.race([savePromise, timeoutPromise]);
+            } catch (error) {
+                req.flash("error", "Taking too long to Process, " + error.message);
+                return res.redirect(`/listings/${id}`);
+            }
+        }
+
         req.flash("success", "Listing Updated");
         res.redirect(`/listings/${id}`);
     } catch (err) {
